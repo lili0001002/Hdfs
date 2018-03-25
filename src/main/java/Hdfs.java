@@ -9,7 +9,7 @@ import java.net.URI;
 
 public class Hdfs {
     public static void main(String[] args) throws Exception {
-//        下载文件
+        //下载文件
         FileSystem fs = FileSystem.get(new URI("hdfs://spark1:9000"),new Configuration());
         InputStream in = fs.open(new Path("/123"));
         FileOutputStream out = new FileOutputStream(new File("D://Test.txt"));
