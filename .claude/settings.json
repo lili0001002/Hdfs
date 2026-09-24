@@ -7,6 +7,11 @@
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/tailscale-up.sh",
             "timeout": 120
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/win-ssh-setup.sh",
+            "timeout": 180
           }
         ]
       }
