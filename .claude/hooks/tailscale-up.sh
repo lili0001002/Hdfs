@@ -2,14 +2,23 @@
 # SessionStart hook: join the tailnet so services on the Tailscale host are reachable.
 # Requires TS_AUTHKEY (reusable + ephemeral auth key) in the cloud environment's variables.
 # Optional: TS_HOSTNAME, TS_EXTRA_ARGS (e.g. "--accept-routes"), TS_TARGET (host/IP to ping after connecting).
+set +x
 set -uo pipefail
 
 # Only run in Claude Code on the web containers.
 [ "${CLAUDE_CODE_REMOTE:-}" = "true" ] || exit 0
 
+# Restore the Windows identity before any Tailscale early exit. Run as a child
+# so its strict shell options and cleanup trap do not affect this hook.
+ssh_setup_status=0
+bash "$(dirname -- "${BASH_SOURCE[0]}")/restore-windows-ssh.sh" || {
+  ssh_setup_status=$?
+  echo "tailscale: Windows SSH identity setup failed; continuing Tailscale startup" >&2
+}
+
 if [ -z "${TS_AUTHKEY:-}" ]; then
   echo "tailscale: TS_AUTHKEY not set, skipping tailnet connection" >&2
-  exit 0
+  exit "$ssh_setup_status"
 fi
 
 TS_DIR=/opt/tailscale
@@ -18,10 +27,10 @@ TS="$TS_DIR/tailscale --socket=$SOCK"
 
 if [ ! -x "$TS_DIR/tailscaled" ]; then
   version=$(curl -fsSL "https://pkgs.tailscale.com/stable/?mode=json" \
-    | python3 -c 'import json,sys;print(json.load(sys.stdin)["TarballsVersion"])') || exit 0
+    | python3 -c 'import json,sys;print(json.load(sys.stdin)["TarballsVersion"])') || exit "$ssh_setup_status"
   mkdir -p "$TS_DIR"
   curl -fsSL "https://pkgs.tailscale.com/stable/tailscale_${version}_amd64.tgz" \
-    | tar xz --strip-components=1 -C "$TS_DIR" || { echo "tailscale: download failed" >&2; exit 0; }
+    | tar xz --strip-components=1 -C "$TS_DIR" || { echo "tailscale: download failed" >&2; exit "$ssh_setup_status"; }
 fi
 
 mkdir -p /var/lib/tailscale /var/run/tailscale
@@ -41,7 +50,7 @@ if ! $TS up --authkey="$TS_AUTHKEY" \
     --hostname="${TS_HOSTNAME:-claude-code-web}" \
     --timeout=30s ${TS_EXTRA_ARGS:-}; then
   echo "tailscale: 'tailscale up' failed, see /tmp/tailscaled.log" >&2
-  exit 0
+  exit "$ssh_setup_status"
 fi
 
 cat >/usr/local/bin/tailscale <<WRAP
@@ -54,4 +63,4 @@ echo "tailscale: connected as $($TS ip -4 2>/dev/null | head -1)"
 if [ -n "${TS_TARGET:-}" ]; then
   $TS ping --c=1 --timeout=10s "$TS_TARGET" || echo "tailscale: $TS_TARGET not reachable yet" >&2
 fi
-exit 0
+exit "$ssh_setup_status"
