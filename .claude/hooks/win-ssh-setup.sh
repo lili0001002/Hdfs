@@ -54,7 +54,8 @@ chmod 600 "$CONF"
 
 touch "$MAIN_CONF"
 if [ "$(head -n1 "$MAIN_CONF")" != "$INCLUDE_LINE" ]; then
-  { echo "$INCLUDE_LINE"; grep -vxF "$INCLUDE_LINE" "$MAIN_CONF"; } >"$MAIN_CONF.tmp" && mv -f "$MAIN_CONF.tmp" "$MAIN_CONF"
+  # grep exits 1 when nothing is left (e.g. empty config); that must not skip the mv.
+  { echo "$INCLUDE_LINE"; grep -vxF "$INCLUDE_LINE" "$MAIN_CONF" || true; } >"$MAIN_CONF.tmp" && mv -f "$MAIN_CONF.tmp" "$MAIN_CONF"
 fi
 chmod 600 "$MAIN_CONF"
 echo "win-ssh: key $(ssh-keygen -l -f "$KEY" | awk '{print $1, $2, $NF}')"
