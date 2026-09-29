@@ -13,3 +13,14 @@
 ## 后续记录格式
 
 每条写 UTC 时间、动作、输入检查点、实际结果、正式日期是否推进、验收状态、故障或下一步。详细证据用本机相对产物路径指向，不能复制原始正文、账户表或私有绝对路径。
+
+## 2026-09-29 02:13 UTC：云端接手回执（Claude）
+
+- 访问方式：按用户要求只经 Tailscale：OpenSSH 使用 `tailscale nc` 代理连接 tailnet 对端（DERP 中继），沿用已有主机密钥校验。远端身份、指定工作树和 Python 3.10.11 均已实际验证。
+- 已读取 4 个权威入口及 PLAN，写入时重算 SHA256，与首次读取一致：
+  - REPORT.md `7e96e3b5…d9c`；ROOT_PROGRESS.json `19af04fe…8b95`；CONTINUE.json `45ada1cc…23ae`；ROOT_C40_DUAL_ACCOUNT_ACCEPTANCE.json `1c890db1…109b`。
+- 正式检查点仍为 C40（2025-11-11 收盘／11-12 开盘，双账户已重开）；C40 之后新增正式日数 0。
+- Nov12：270 条新增来源中，已落盘草稿 120 条（B 组 80、C 组 40，共 12 个分片），A 组 0 条；150 条无草稿；已验收 0 条。DeepSeek 共享额度 89/89，本会话 DeepSeek/Fable 调用 0 次。
+- 本机写回：在工作树 `research/cloud_handoff_20260928/` 下写入 HANDOFF_RECEIPT.json（`6c08c5ea…b589`）与 EXECUTION_LOG.md，读回逐字节一致；写入探针验证通过。
+- 故障：经 SSH stdin 传入超过约 4KB 的脚本会挂起，已终止且未产生本机写入；改为经同一隧道 sftp 上传并校验哈希。
+- 未推进正式日期；账户、冻结文件、进度入口均未改动。下一步：验收 120 条草稿，再补齐其余 150 条。
